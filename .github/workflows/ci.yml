@@ -1,0 +1,48 @@
+name: Continuous Integration
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+  
+permissions: write-all
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Install CML
+        run: |
+          pip install cml
+          
+      - name: Install Packages
+        run: make install
+        
+      - name: Format
+        run: make format
+        
+      - name: Train
+        run: make train
+        
+      - name: Evaluation
+        env:
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: make eval
+        
+      - name: Update Branch
+        env:
+          NAME: ${{ secrets.USER_NAME }}
+          EMAIL: ${{ secrets.USER_EMAIL }}
+        run: |
+          git config --global user.name "$NAME"
+          git config --global user.email "$EMAIL"
+          git add .
+          git commit -m "Update model and results [skip ci]"
+          git push
